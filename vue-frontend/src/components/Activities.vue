@@ -6,6 +6,11 @@ export default {
       activities: [],
     };
   },
+  methods: {
+    updateActivities(newActivities) {
+      this.activities = newActivities;
+    }
+  },
   async mounted() {
     const response = await fetch('http://localhost:8080/activities', {
       method: "GET",
@@ -21,7 +26,14 @@ export default {
 
 <template>
   <div class="activities__container">
-    {{activities}}
+    <div v-for="activity in activities" :key="activity.id" class="activities__activity">
+      <p>Title: {{ activity.title }}</p>
+      <p>Price: {{ activity.price }} {{ activity.currency }}</p>
+      <p>Rating: {{ activity.rating }}</p>
+      <p>Special Offer: {{ activity.specialOffer ? "Yes" : "No" }}</p>
+      <p>Supplier Name: {{ activity.supplierName }}</p>
+      <p>Supplier Location: {{ activity.supplierLocation }}</p>
+    </div>
   </div>
 </template>
 
