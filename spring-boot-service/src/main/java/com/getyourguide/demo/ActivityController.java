@@ -52,4 +52,26 @@ public class ActivityController {
             throw new RuntimeException(e);
         }
     }
+    @GetMapping("/activities/search")
+    public ResponseEntity<List<Activity>> searchActivities(String title) {
+        List<Activity> activities = null;
+        try {
+            //create ObjectMapper instance
+            ObjectMapper objectMapper = new ObjectMapper();
+            //read JSON file and convert to a list of activities
+            var fileInputStream = new ClassPathResource("static/activities.json").getInputStream();
+            activities = objectMapper.readValue(fileInputStream, new TypeReference<List<Activity>>() {
+            });
+
+            activities = activities.stream()
+                    .filter(activity -> activity.getTitle().toLowerCase().contains(title.toLowerCase()))
+                    .collect(Collectors.toList());
+
+            System.out.println(activities);
+
+            return ResponseEntity.ok(activities);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
