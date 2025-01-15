@@ -42,29 +42,12 @@ public class ActivityController {
     @GetMapping("/activities")
     public ResponseEntity<List<Activity>> activities() {
         List<Activity> activities = null;
-        Map<Long, Supplier> suppliers = null;
+
         try {
-            //create ObjectMapper instance
-            ObjectMapper objectMapper = new ObjectMapper();
-            //read JSON file and convert to a list of activities
-            var fileInputStream = new ClassPathResource("static/activities.json").getInputStream();
-            activities = objectMapper.readValue(fileInputStream, new TypeReference<List<Activity>>() {
-            });
 
-            var suppliersInputStream = new ClassPathResource("static/suppliers.json").getInputStream();
-            List<Supplier> supplierList = objectMapper.readValue(suppliersInputStream, new TypeReference<List<Supplier>>() {});
-            suppliers = supplierList.stream().collect(Collectors.toMap(Supplier::getId, Function.identity()));
+            activities = loadActivities();
 
-            final Map<Long, Supplier> finalSuppliers = suppliers;
-            activities.forEach(activity -> {
-                Supplier supplier = finalSuppliers.get(activity.getSupplierId());
-                if (supplier != null) {
-                    activity.setSupplierName(supplier.getName());
-                    String supplierLocation = String.format("%s, %s, %s, %s",
-                            supplier.getAddress(), supplier.getZip(), supplier.getCity(), supplier.getCountry());
-                    activity.setSupplierLocation(supplierLocation);
-                }
-            });
+            enrichActivities(activities);
 
             return ResponseEntity.ok(activities);
         } catch (IOException e) {
@@ -76,35 +59,46 @@ public class ActivityController {
         List<Activity> activities = null;
         Map<Long, Supplier> suppliers = null;
         try {
-            //create ObjectMapper instance
-            ObjectMapper objectMapper = new ObjectMapper();
-            //read JSON file and convert to a list of activities
-            var fileInputStream = new ClassPathResource("static/activities.json").getInputStream();
-            activities = objectMapper.readValue(fileInputStream, new TypeReference<List<Activity>>() {
-            });
+
+            activities = loadActivities();
 
             activities = activities.stream()
                     .filter(activity -> activity.getTitle().toLowerCase().contains(title.toLowerCase()))
                     .collect(Collectors.toList());
 
-            var suppliersInputStream = new ClassPathResource("static/suppliers.json").getInputStream();
-            List<Supplier> supplierList = objectMapper.readValue(suppliersInputStream, new TypeReference<List<Supplier>>() {});
-            suppliers = supplierList.stream().collect(Collectors.toMap(Supplier::getId, Function.identity()));
-
-            final Map<Long, Supplier> finalSuppliers = suppliers;
-            activities.forEach(activity -> {
-                Supplier supplier = finalSuppliers.get(activity.getSupplierId());
-                if (supplier != null) {
-                    activity.setSupplierName(supplier.getName());
-                    String supplierLocation = String.format("%s, %s, %s, %s",
-                            supplier.getAddress(), supplier.getZip(), supplier.getCity(), supplier.getCountry());
-                    activity.setSupplierLocation(supplierLocation);
-                }
-            });
+            enrichActivities(activities);
 
             return ResponseEntity.ok(activities);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
+
+    private List<Activity> loadActivities() throws IOException {
+        //create ObjectMapper instance
+        ObjectMapper objectMapper = new ObjectMapper();
+        //read JSON file and convert to a list of activities
+        var fileInputStream = new ClassPathResource("static/activities.json").getInputStream();
+        return objectMapper.readValue(fileInputStream, new TypeReference<List<Activity>>() {
+        });
+    }
+
+    private void enrichActivities(List<Activity> activities) throws IOException {
+        //create ObjectMapper instance
+        ObjectMapper objectMapper = new ObjectMapper();
+        var suppliersInputStream = new ClassPathResource("static/suppliers.json").getInputStream();
+        List<Supplier> supplierList = objectMapper.readValue(suppliersInputStream, new TypeReference<>() {});
+        Map<Long, Supplier> suppliers = supplierList.stream().collect(Collectors.toMap(Supplier::getId, Function.identity()));
+
+        activities.forEach(activity -> {
+            Supplier supplier = suppliers.get(activity.getSupplierId());
+            if (supplier != null) {
+                activity.setSupplierName(supplier.getName());
+                String supplierLocation = String.format("%s, %s, %s, %s",
+                        supplier.getAddress(), supplier.getZip(), supplier.getCity(), supplier.getCountry());
+                activity.setSupplierLocation(supplierLocation);
+            }
+        });
+    }
+
 }
